@@ -1,0 +1,187 @@
+<div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+  <h1 class="h3 fw-bold">User Details</h1>
+  <a href="/admin/users" class="btn btn-outline-secondary d-flex align-items-center gap-1">
+    <i class="bi bi-arrow-left"></i> Back
+  </a>
+</div>
+
+{{#if error}}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <strong>Error:</strong> An error has occurred. Please try again.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{{/if}}
+
+{{#if success}}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <strong>Success:</strong> The operation has been completed successfully.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{{/if}}
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0 fw-semibold">Personal Information</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+
+          <!-- Info -->
+          <div class="col-md-9">
+            <table class="table table-borderless mb-0">
+              <tr>
+                <th>ID</th>
+                <td><strong>#{{userDetail.id}}</strong></td>
+              </tr>
+              <tr>
+                <th>Full Name</th>
+                <td>{{userDetail.full_name}}</td>
+              </tr>
+              <tr>
+                <th>Email</th>
+                <td>{{userDetail.email}}</td>
+              </tr>
+              <tr>
+                <th>Role</th>
+                <td>
+                  <span class="badge rounded-pill px-3 py-2 bg-{{getRoleBadge userDetail.role}}">
+                    {{getRoleText userDetail.role}}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <th>Created Date</th>
+                <td>{{formatDate userDetail.created_at}}</td>
+              </tr>
+              {{#if userDetail.instructor_bio}}
+              <tr>
+                <th>Bio</th>
+                <td>{{userDetail.instructor_bio}}</td>
+              </tr>
+              {{/if}}
+            </table>
+          </div>
+
+          <!-- Avatar -->
+          <div class="col-md-3 text-center">
+            <div class="p-3 border rounded bg-light">
+              <h6 class="fw-semibold mb-3">Profile Picture</h6>
+              <img
+                src="{{#if userDetail.profile_picture_url}}{{userDetail.profile_picture_url}}{{else}}https://via.placeholder.com/280x280?text=No+Image{{/if}}"
+                class="rounded img-fluid" style="max-height: 230px; object-fit: cover;"
+                onerror="this.src='https://via.placeholder.com/280x280?text=No+Image';">
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0 fw-semibold">Statistics</h5>
+      </div>
+      <div class="card-body">
+
+        {{#if (eq userDetail.role 'instructor')}}
+        {{#if courses.length}}
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h4 class="fw-bold text-primary">{{length courses}}</h4>
+              <p class="text-muted mb-0">Total Courses</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h4 class="fw-bold text-success">{{getActiveCoursesCount courses}}</h4>
+              <p class="text-muted mb-0">Active Courses</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h4 class="fw-bold text-secondary">{{countCoursesByStatus courses 'draft'}}</h4>
+              <p class="text-muted mb-0">Draft Courses</p>
+            </div>
+          </div>
+        </div>
+        {{else}}
+        <p class="text-center text-muted mb-0">No courses available</p>
+        {{/if}}
+        {{/if}}
+
+        {{#if (eq userDetail.role 'student')}}
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="p-3 border rounded">
+              <h4 class="fw-bold text-primary">{{#if enrolledCourses}}{{enrolledCourses.length}}{{else}}0{{/if}}</h4>
+              <p class="text-muted mb-0">Enrolled Courses</p>
+            </div>
+          </div>
+        </div>
+        {{/if}}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Instructor's Courses -->
+{{#if (eq userDetail.role 'instructor')}}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h5 class="mb-0 fw-semibold">Created Courses</h5>
+      </div>
+      <div class="card-body">
+        {{#if courses.length}}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Course Name</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each courses}}
+              <tr>
+                <td>{{id}}</td>
+                <td>{{title}}</td>
+                <td>{{formatCurrency price}}</td>
+                <td>
+                  <span class="badge rounded-pill px-3 py-2 bg-{{getStatusBadge status}}">
+                    {{getStatusText status}}
+                  </span>
+                </td>
+                <td>{{formatDate created_at}}</td>
+                <td>
+                  <a href="/admin/courses/{{id}}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+        {{else}}
+        <p class="text-center text-muted">No courses available</p>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</div>
+{{/if}}

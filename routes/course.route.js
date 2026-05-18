@@ -1,0 +1,243 @@
+// routes/course.route.js
+import { Router } from 'express';
+import courseModel from '../models/course.model.js';
+import categoryModel from '../models/category.model.js';
+import { requireAuth } from '../middlewares/auth.js';
+
+import watchlistModel from '../models/watchlist.model.js';
+import enrollmentModel from '../models/enrollment.model.js';
+import progressModel from '../models/progress.model.js';
+import reviewModel from '../models/review.model.js';
+
+const router = Router();
+
+// Search (đặt trước /:id)
+router.get('/search', async (req, res) => {
+    const q = req.query.q || '';
+    const categoryId = req.query.category ? Number(req.query.category) : null;
+    const sort = req.query.sort || 'rating_desc';
+    const page = Number(req.query.page) || 1;
+    const pageSize = 12;
+
+    let categoryIds = null;
+    let categoryInfo = null;
+
+    if (categoryId) {
+        categoryInfo = await categoryModel.findById(categoryId);
+        // Lấy cả cha + con (nếu là cha), hoặc chỉ chính nó (nếu là con)
+        categoryIds = await categoryModel.getCategoryWithChildren(categoryId);
+    }
+
+    const { rows, total } = await courseModel.search({
+        q,
+        categoryIds,    // ← truyền mảng IDs thay vì 1 id
+        sort,
+        page,
+        pageSize
+    });
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    res.render('vwCourse/search', {
+        courses: rows,
+        q,
+        categoryId,      // để UI hiển thị chip đang lọc
+        categoryInfo,
+        sort,
+        page,
+        totalPages,
+        total,
+        hasResults: rows.length > 0
+    });
+});
+
+
+// Detail
+// Preview course, guest can watch preview lectures only
+router.get('/:id/preview', async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const requestedLectureId = req.query.lectureId ? Number(req.query.lectureId) : null;
+
+        if (isNaN(id)) {
+            return res.status(404).render('vwAccount/404');
+        }
+
+        const course = await courseModel.detail(id);
+        if (!course) {
+            return res.status(404).render('vwAccount/404');
+        }
+
+        const curriculum = await courseModel.curriculum(id);
+
+        const previewLectures = curriculum.lectures.filter(l =>
+            l.is_preview_allowed === true && l.video_url
+        );
+
+        if (previewLectures.length === 0) {
+            return res.redirect(`/courses/${id}?error=no_preview`);
+        }
+
+        const chaptersWithPreviewLectures = curriculum.chapters
+            .map(ch => ({
+                ...ch,
+                lectures: previewLectures.filter(l => l.chapter_id === ch.id)
+            }))
+            .filter(ch => ch.lectures.length > 0);
+
+        const reviews = await reviewModel.getByCourse(id, 10);
+        const ratingStats = await reviewModel.getRatingStats(id);
+
+        const validRequestedLecture = previewLectures.find(l => l.id === requestedLectureId);
+        const initialLectureId = validRequestedLecture
+            ? validRequestedLecture.id
+            : previewLectures[0].id;
+
+        res.render('vwCourse/learn', {
+            course,
+            chapters: chaptersWithPreviewLectures,
+            lectures: previewLectures,
+            totalLectures: previewLectures.length,
+
+            progress: {
+                completed: 0,
+                total: previewLectures.length,
+                percentage: 0
+            },
+
+            completedLectureIds: [],
+            reviews,
+            ratingStats,
+            userReview: null,
+            canReview: false,
+
+            isLearningPage: true,
+            previewMode: true,
+            initialLectureId
+        });
+    } catch (error) {
+        console.error('Preview page error:', error);
+        res.status(500).render('vwAccount/404');
+    }
+});
+router.get('/:id', async (req, res) => {
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(404).render('vwAccount/404');
+
+    const course = await courseModel.detail(id);
+    if (!course) return res.status(404).render('vwAccount/404');
+
+    const [curriculum, reviews, related] = await Promise.all([
+        courseModel.curriculum(id),
+        courseModel.reviews(id, 10),
+        courseModel.relatedBestSellers(course.category_id, id, 5),
+    ]);
+
+    // group lectures theo chapter
+    const chaptersWithLectures = curriculum.chapters.map(ch => ({
+        ...ch,
+        lectures: curriculum.lectures.filter(l => l.chapter_id === ch.id)
+    }));
+
+    // tổng thời lượng
+    const totalMinutes = curriculum.lectures.reduce((s, l) => s + (l.duration_minutes || 0), 0);
+    const totalHours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+
+    const firstPreviewLecture = curriculum.lectures.find(l =>
+        l.is_preview_allowed === true && l.video_url
+    );
+
+    const hasPreview = !!firstPreviewLecture;
+    const previewUrl = hasPreview
+        ? `/courses/${id}/preview?lectureId=${firstPreviewLecture.id}`
+        : null;
+
+    // Watchlist state (nếu đã đăng nhập)
+    let isInWatchlist = false;
+    try {
+        if (req.session.user) {
+            isInWatchlist = await watchlistModel.isInWatchlist(req.session.user.id, id);
+        }
+    } catch { isInWatchlist = false; }
+
+    // ✨ NEW: trạng thái đã ghi danh + URL tiếp tục học (chỉ áp dụng cho student)
+    let isEnrolled = false;
+    const keepLearningUrl = `/courses/${id}/learn`;
+    try {
+        if (req.session.user && req.session.user.role === 'student') {
+            isEnrolled = await enrollmentModel.isEnrolled(req.session.user.id, id);
+        }
+    } catch {
+        isEnrolled = false;
+    }
+
+    res.render('vwCourse/detail', {
+        course,
+        chapters: chaptersWithLectures,
+        totalChapters: curriculum.chapters.length,
+        totalLectures: curriculum.lectures.length,
+        totalHours,
+        remainingMinutes,
+        reviews,
+        related,
+        isInWatchlist,
+        isEnrolled,
+        keepLearningUrl,
+        hasPreview,
+        previewUrl
+    });
+});
+
+
+// Learn (student)
+router.get('/:id/learn', requireAuth, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const userId = req.session.user.id;
+        if (isNaN(id)) return res.status(404).render('vwAccount/404');
+
+        const isEnrolled = await enrollmentModel.isEnrolled(userId, id);
+        if (!isEnrolled) return res.redirect(`/courses/${id}?error=not_enrolled`);
+
+        const course = await courseModel.detail(id);
+        if (!course) return res.status(404).render('vwAccount/404');
+
+        const curriculum = await courseModel.curriculum(id);
+
+        const chaptersWithLectures = curriculum.chapters.map(ch => ({
+            ...ch,
+            lectures: curriculum.lectures.filter(l => l.chapter_id === ch.id)
+        }));
+
+        const progress = await progressModel.getCourseProgress(userId, id);
+        const completedLectures = await progressModel.getCompletedLectures(userId, id);
+        const completedLectureIds = completedLectures.map(cl => cl.lecture_id);
+
+        const reviews = await reviewModel.getByCourse(id, 10);
+        const ratingStats = await reviewModel.getRatingStats(id);
+        const userReview = await reviewModel.getUserReview(userId, id);
+
+        res.render('vwCourse/learn', {
+            course,
+            chapters: chaptersWithLectures,
+            lectures: curriculum.lectures,
+            totalLectures: curriculum.lectures.length,
+            progress,
+            completedLectureIds,
+            reviews,
+            ratingStats,
+            userReview,
+            canReview: !userReview,
+            isLearningPage: true,
+
+            previewMode: false,
+            initialLectureId: null
+        });
+    } catch (error) {
+        console.error('Learning page error:', error);
+        res.status(500).render('vwAccount/404');
+    }
+});
+
+export default router;

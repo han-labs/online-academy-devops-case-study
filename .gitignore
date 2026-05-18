@@ -1,0 +1,18 @@
+node_modules/
+.env
+.DS_Store
+npm-debug.log*
+tmp/
+*.backup
+*.backup.*
+*.bak
+
+# Ignore large uploaded lecture videos
+public/uploads/lecturers/
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Windows system files
+desktop.ini
