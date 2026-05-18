@@ -38,8 +38,9 @@
 
             <div class="col-lg-4 mt-4 mt-lg-0">
                 <div class="course-card-hero bg-white text-dark p-3 rounded-3 shadow-lg">
-                    <img src="{{course.image_url}}" alt="{{course.title}}" class="img-fluid rounded mb-3">
-
+                    <img src="{{#if course.image_url}}{{course.image_url}}{{else}}/images/course-placeholder.svg{{/if}}"
+                        alt="{{course.title}}" class="img-fluid rounded mb-3"
+                        onerror="this.onerror=null; this.src='/images/course-placeholder.svg';">
                     {{#ifPromo course.price course.promotional_price}}
                     <div class="h4 text-danger fw-bold mb-1">{{formatNumber course.promotional_price}}₫</div>
                     <div class="text-muted text-decoration-line-through small mb-3">{{formatNumber course.price}}₫</div>
@@ -263,8 +264,9 @@
                 {{#each related}}
                 <div class="card mb-2 border-0 shadow-sm">
                     <a href="/courses/{{id}}" class="text-decoration-none">
-                        <img src="{{cover}}" class="card-img-top" alt="{{title}}"
-                            style="height: 150px; object-fit: cover;">
+                        <img src="{{#if cover}}{{cover}}{{else}}/images/course-placeholder.svg{{/if}}"
+                            class="card-img-top" alt="{{title}}" style="height: 150px; object-fit: cover;"
+                            onerror="this.onerror=null; this.src='/images/course-placeholder.svg';">
                     </a>
                     <div class="card-body p-2">
                         <h6 class="card-title mb-1">
