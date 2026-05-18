@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import { notFoundHandler, errorHandler } from './middlewares/error-handler.js';
 import categoryModel from './models/category.model.js';
 import homeRouter from './routes/home.route.js';
+import healthRouter from './routes/health.route.js';
 import categoryRouter from './routes/category.route.js';
 import accountRouter from './routes/account.route.js';
 import courseRouter from './routes/course.route.js';
@@ -139,6 +140,9 @@ app.set('views', path.join(__dirname, 'views'));
 // middleware
 app.use(express.json()); // cần cho /api/progress/*
 app.use(express.urlencoded({ extended: true }));
+
+// Health and readiness endpoints should not depend on session or page-level data
+app.use('/', healthRouter);
 
 // static
 app.use('/static', express.static(path.join(__dirname, 'static')));
