@@ -16,3 +16,7 @@ public/uploads/lecturers/
 
 # Windows system files
 desktop.ini
+
+# Ignore uploaded lecture videos
+public/uploads/lectures/
+public/uploads/lecturers/
