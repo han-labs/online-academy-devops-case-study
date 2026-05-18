@@ -4,17 +4,16 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center p-5">
                     <div class="mb-4">
-                        <h1 class="display-4 fw-bold mb-2" style="color:#160438;">404</h1>
-                        <h4 class="mb-3">Page not found</h4>
+                        <h1 class="display-4 fw-bold mb-2" style="color:#160438;">500</h1>
+                        <h4 class="mb-3">Something went wrong</h4>
                         <p class="text-muted mb-0">
-                            The page you are looking for does not exist, may have been moved, or the link may be
-                            incorrect.
+                            The server encountered an unexpected error. Please try again later.
                         </p>
                     </div>
 
-                    {{#if error}}
+                    {{#if message}}
                     <div class="alert alert-light border text-start small mb-4">
-                        <strong>Details:</strong> {{error}}
+                        <strong>Message:</strong> {{message}}
                     </div>
                     {{/if}}
 
@@ -22,8 +21,8 @@
                         <a href="/" class="btn text-white" style="background-color:#160438;">
                             Back to Home
                         </a>
-                        <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
-                            Go Back
+                        <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+                            Try Again
                         </button>
                     </div>
                 </div>

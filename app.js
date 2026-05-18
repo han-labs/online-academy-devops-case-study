@@ -6,6 +6,7 @@ import session from 'express-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { notFoundHandler, errorHandler } from './middlewares/error-handler.js';
 import categoryModel from './models/category.model.js';
 import homeRouter from './routes/home.route.js';
 import categoryRouter from './routes/category.route.js';
@@ -204,8 +205,9 @@ app.use("/", aboutRouter);
 // OAuth mounts (sau session)
 mountGoogleAuth(app);
 
-// 404
-app.use((req, res) => res.status(404).render('vwAccount/404'));
+// Error handling middleware, must be registered after all routes
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // start
 const PORT = process.env.PORT || 3000;
