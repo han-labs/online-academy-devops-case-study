@@ -1,4 +1,6 @@
 // app.js (root)
+import pg from 'pg';
+import connectPgSimple from 'connect-pg-simple';
 import 'dotenv/config';
 import express from 'express';
 import { engine } from 'express-handlebars';
@@ -36,6 +38,9 @@ const __dirname = path.dirname(__filename);
 
 // Init app
 const app = express();
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
 
 // view engine + helpers
 app.engine('handlebars', engine({
@@ -150,15 +155,43 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use(express.static('public'));
 
 // session
-app.use(session({
+const PgSession = connectPgSimple(session);
+const { Pool } = pg;
+
+const shouldUsePostgresSession =
+  process.env.SESSION_STORE === 'postgres' ||
+  process.env.NODE_ENV === 'production';
+
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'local-dev-secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,
+    secure: process.env.COOKIE_SECURE === 'true',
+    httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000
   }
-}));
+};
+
+if (shouldUsePostgresSession) {
+  sessionConfig.store = new PgSession({
+    pool: new Pool({
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT || 5432),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || 'postgres',
+      ssl: process.env.DB_SSL === 'true'
+        ? { rejectUnauthorized: false }
+        : false
+    }),
+    tableName: 'session',
+    createTableIfMissing: true
+  });
+}
+
+app.use(session(sessionConfig));
 // inject user + categories
 app.use(async (req, res, next) => {
   res.locals.user = req.session.user || null;
