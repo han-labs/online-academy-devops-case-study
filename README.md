@@ -2,101 +2,182 @@
 
 ## Overview
 
-Online Academy is a Node.js and Express-based web application for online course learning. The application supports course browsing, course detail pages, user authentication, role-based access control, free preview lessons, student learning flow, course progress tracking, reviews, and instructor/admin course management.
+Online Academy is a Node.js and Express web application for online course learning. It supports course browsing, course details, user authentication, role-based access, free preview lessons, student learning flow, progress tracking, reviews, and instructor/admin course management.
 
-This repository is maintained as a personal DevOps-focused case study. The main goal is to take an academic web application and improve it toward a production-ready deployment workflow using environment-based configuration, Docker, cloud deployment, CI/CD, health checks, smoke testing, and operational documentation.
+This repository is maintained as a DevOps-focused case study. The goal is to improve an academic web application into a production-ready portfolio project with Docker, AWS EC2, Nginx, Render, GitHub Actions CI/CD, health checks, smoke testing, and operational documentation.
 
-## Project Origin
+## Live Demo
 
-This project originally started as a group academic project for an Online Academy platform.
+Render live demo:
 
-During the original group project, my responsibilities included:
+```text
+https://online-academy-hnnq.onrender.com
+```
 
-- Led the team, planned the project structure, and managed the Git workflow
-- Designed the database schema and implemented backend RESTful APIs
-- Implemented role-based access control for admin, instructor, and student users
+The Render deployment is used as the stable public demo environment with HTTPS and Google OAuth login.
 
-After the academic project phase, I continued improving this project independently as a DevOps and backend portfolio case study.
+The AWS EC2 deployment is used as a documented DevOps case study. The EC2 instance is not kept running continuously to control cloud cost.
 
-## Personal DevOps-Focused Improvements
+## DevOps Highlights
 
-My personal work in this repository focuses on improving the project from a development-stage academic application into a deployment-ready case study.
-
-Key improvements include:
-
-- Stabilized the course detail and learning flow
-- Implemented guest free preview mode for selected lessons
-- Separated guest preview access from enrolled student learning access
-- Improved the learning player navigation experience
-- Fixed Previous and Next lecture navigation behavior
-- Preserved role-based access control between guest, student, instructor, and admin users
-- Moved sensitive configuration toward environment variables
-- Prepared the project for Docker, cloud deployment, CI/CD, health checks, smoke tests, and deployment documentation
+* Containerized the Node.js application with Docker and Docker Compose
+* Deployed the application to AWS EC2 Ubuntu
+* Configured Nginx as a reverse proxy in front of the Dockerized app
+* Restricted public access to the internal application port
+* Added `/healthz` and `/readyz` endpoints for health and readiness checks
+* Added smoke testing for post-deployment verification
+* Replaced in-memory session storage with PostgreSQL-backed sessions
+* Implemented GitHub Actions CI for dependency installation and Docker build validation
+* Implemented GitHub Actions manual CD using a self-hosted runner on EC2
+* Hosted the public demo on Render with HTTPS and Google OAuth
+* Prepared deployment guide, runbook, architecture notes, and deployment screenshots
 
 ## Tech Stack
 
-### Application
+| Area          | Technologies                                 |
+| ------------- | -------------------------------------------- |
+| Backend       | Node.js, Express.js, JavaScript              |
+| Frontend      | Handlebars, Bootstrap 5                      |
+| Database      | Supabase PostgreSQL                          |
+| Session Store | PostgreSQL-backed session storage            |
+| Deployment    | Docker, Docker Compose, AWS EC2, Render      |
+| Reverse Proxy | Nginx                                        |
+| CI/CD         | GitHub Actions, self-hosted runner           |
+| Verification  | Health checks, readiness checks, smoke tests |
 
-- Node.js | Express.js | JavaScript | Handlebars | Bootstrap 5
+## Architecture
 
-### Database and Storage
+Render live demo:
 
-- Supabase PostgreSQL
-- Supabase Storage, planned for production asset handling
+```text
+User Browser
+-> Render HTTPS Web Service
+-> Node.js Express Application
+-> Supabase PostgreSQL
+```
 
-### DevOps and Deployment
+AWS EC2 DevOps deployment:
 
-- Docker, planned
-- Docker Compose, planned
-- AWS EC2 Linux, planned
-- Nginx reverse proxy, planned
-- GitHub Actions CI/CD, planned
-- Render as backup demo environment, planned
+```text
+User Browser
+-> EC2 Public IPv4, Port 80
+-> Nginx Reverse Proxy
+-> Docker Container, Node.js App on Port 3000
+-> Supabase PostgreSQL
+```
 
-## Current Features
+On EC2, port `3000` is not publicly exposed. Public traffic goes through Nginx on port `80`.
 
-### Public User
+## Screenshots
 
-- View homepage
-- Browse course catalog
-- Search and filter courses
-- View course detail page
-- Watch free preview lessons directly inside the learning player
-- Register and log in
+### EC2 Nginx Deployment
 
-### Student
+![EC2 Nginx Web](docs/screenshots/online-academy-ec2-nginx-web.png)
 
-- Enroll in courses
-- Access full course learning page after enrollment
-- Watch course lectures
-- Navigate between lectures using Previous and Next
-- Track lesson completion
-- Manage watchlist
-- Submit course reviews
+### Smoke Test Result
 
-### Instructor
+![Smoke Test](docs/screenshots/smoke-test-ec2-nginx.png)
 
-- Create and manage courses
-- Manage chapters and lectures
-- Upload course assets
-- Toggle preview availability for lectures
-- View course-related information
+### Docker Container on EC2
 
-### Admin
+![Docker on EC2](docs/screenshots/docker-ps-ec2.png)
 
-- Manage users
-- Manage categories
-- Manage courses
-- Review platform data through admin pages
+### GitHub Actions CI/CD
 
+![GitHub Actions CI](docs/screenshots/github-actions-ci.png)
 
-## Environment Variables
+![GitHub Actions Manual CD](docs/screenshots/github-actions-manual-cd.png)
 
-Create a `.env` file based on `.env.example`.
+## CI/CD Summary
+
+### Continuous Integration
+
+Workflow file:
+
+```text
+.github/workflows/ci.yml
+```
+
+CI validates:
+
+* source checkout
+* Node.js setup
+* dependency installation with `npm ci`
+* Docker image build
+
+### Manual Continuous Deployment
+
+Workflow file:
+
+```text
+.github/workflows/deploy.yml
+```
+
+Manual CD flow:
+
+```text
+GitHub Actions
+-> Self-hosted runner on EC2
+-> Pull latest main branch
+-> Rebuild and restart Docker Compose service
+-> Verify /healthz
+-> Verify /readyz
+```
+
+Manual deployment is used to control cloud cost because the EC2 instance is not intended to run continuously.
+
+## Health, Readiness, and Smoke Test
+
+Health check:
+
+```text
+GET /healthz
+```
+
+Readiness check:
+
+```text
+GET /readyz
+```
+
+Run smoke test:
+
+```bash
+npm run smoke
+```
+
+Expected result:
+
+```text
+Smoke test summary: 6/6 passed
+```
+
+The smoke test verifies:
+
+* homepage
+* course search page
+* course detail page
+* course preview page
+* health check
+* readiness check
+
+## Documentation
+
+| Document                             | Purpose                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
+| [DEPLOYMENT.md](DEPLOYMENT.md)       | Deployment guide for Docker, AWS EC2, Nginx, Render, and CI/CD                |
+| [RUNBOOK.md](RUNBOOK.md)             | Operations commands, troubleshooting steps, and monitoring checklist          |
+| [ARCHITECTURE.md](ARCHITECTURE.md)   | System architecture, request flow, database overview, and deployment topology |
+| [docs/screenshots](docs/screenshots) | Deployment evidence screenshots                                               |
+
+## Environment Configuration
+
+Real secrets are managed through environment variables and are not committed to GitHub.
+
+Required variables include:
 
 ```env
-NODE_ENV=development
-PORT=3000
+NODE_ENV=production
 SESSION_SECRET=your-session-secret
 
 DB_HOST=your-database-host
@@ -106,285 +187,68 @@ DB_PASSWORD=your-database-password
 DB_NAME=postgres
 DB_SSL=true
 
+SESSION_STORE=postgres
+COOKIE_SECURE=true
+TRUST_PROXY=true
+
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+GOOGLE_CALLBACK_URL=https://your-render-url/auth/google/callback
 ```
 
-Do not commit `.env` to GitHub.
+## Local Development
 
-Secrets such as database passwords, OAuth client secrets, and session secrets must be stored only in local environment files, deployment platform environment variables, or GitHub Secrets.
-
-## Local Development Setup
-
-### 1. Clone the repository
+Install dependencies:
 
 ```bash
-git clone https://github.com/han-labs/online-academy-devops-case-study.git
-cd online-academy-devops-case-study
+npm ci
 ```
 
-### 2. Install dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure environment variables
-
-Create a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Then update the values inside `.env`.
-
-### 4. Start the application
+Start the application:
 
 ```bash
 npm start
 ```
 
-The application should run at:
+Open:
 
 ```text
 http://localhost:3000
 ```
 
-## Important Local Notes
-
-If the Supabase database password contains special characters, wrap the password in quotes inside `.env`.
-
-Example:
-
-```env
-DB_PASSWORD="your-password-with-special-characters"
-```
-
-If the password is not quoted correctly, PostgreSQL authentication may fail.
-
-## Security Notes
-
-This project follows these basic security practices:
-
-- Environment variables are used for secrets
-- `.env` is excluded from Git
-- OAuth credentials should not be hardcoded in source code
-- Database credentials should not be committed
-- Large uploaded lecture videos are excluded from Git
-- Production secrets should be managed through deployment platform environment variables or GitHub Secrets
-
-## Completed Improvements
-
-The following improvements have been completed in this personal case study branch:
-
-- Fixed database configuration issue related to environment variables
-- Moved session secret configuration to environment variables
-- Updated application port configuration to support deployment environments
-- Stabilized the course detail page
-- Implemented guest preview mode
-- Added a clear free preview call-to-action on the course detail page
-- Added preview mode banner on the learning page
-- Improved the video player behavior for preview and full learning modes
-- Fixed lecture navigation using direct lecture selection, Previous, and Next
-- Preserved enrolled student full-learning flow
-- Preserved role-based access control logic
-
-## DevOps Roadmap
-
-The current goal is to improve this application into a production-ready DevOps case study.
-
-### In Progress
-
-- Removing hardcoded OAuth credentials from source code
-- Cleaning Git history before pushing to GitHub
-- Preparing fallback behavior for missing images and invalid video URLs
-
-### Planned
-
-- Add image and video fallback handling
-- Add centralized error handling
-- Add `/healthz` endpoint
-- Add `/readyz` endpoint
-- Add smoke testing script
-- Standardize Supabase Storage usage
-- Add Dockerfile
-- Add Docker Compose setup
-- Deploy to AWS EC2 Linux
-- Configure Nginx reverse proxy
-- Add GitHub Actions CI workflow
-- Add GitHub Actions deployment workflow
-- Add deployment documentation
-- Add operations runbook
-- Add architecture documentation
-
-## Planned Production Architecture
-
-```text
-User Browser
--> Nginx Reverse Proxy
--> Node.js Express Application
--> Supabase PostgreSQL
--> Supabase Storage
-```
-
-Planned deployment flow:
-
-```text
-GitHub Repository
--> GitHub Actions CI
--> Docker Build
--> AWS EC2 Deployment
--> Docker Compose
--> Nginx Reverse Proxy
--> Health Check and Smoke Test
-```
-
-## Planned DevOps Practices
-
-This repository will include the following DevOps-related practices:
-
-- Environment-based configuration
-- Dockerized application runtime
-- Docker Compose deployment
-- AWS EC2 Linux server deployment
-- Nginx reverse proxy
-- GitHub Actions CI pipeline
-- GitHub Actions deployment pipeline
-- Health and readiness checks
-- Post-deployment smoke testing
-- Deployment runbook
-- Troubleshooting documentation
-
-## Health Check Plan
-
-The project will include:
-
-```text
-GET /healthz
-```
-
-Expected purpose:
-
-- Confirm that the application process is running
-
-Planned response:
-
-```json
-{
-  "status": "ok",
-  "service": "online-academy"
-}
-```
-
-## Readiness Check Plan
-
-The project will include:
-
-```text
-GET /readyz
-```
-
-Expected purpose:
-
-- Confirm that the application is ready to serve traffic
-- Validate required environment variables
-- Validate database connectivity
-
-Planned response:
-
-```json
-{
-  "status": "ready",
-  "database": "connected"
-}
-```
-
-## Smoke Test Plan
-
-A smoke test script will be added to verify important routes after deployment.
-
-Planned checks:
-
-```text
-/
- /courses/search
- /courses/:id
- /courses/:id/preview
- /healthz
- /readyz
-```
-
-The smoke test will be used locally and inside CI/CD.
-
-## Git Workflow
-
-Recommended workflow for this repository:
+## Docker Local Run
 
 ```bash
-git checkout -b feature/name-of-change
-git add .
-git commit -m "type: short description"
-git push origin feature/name-of-change
+docker compose up -d --build
 ```
 
-Commit message examples:
+Check container:
 
-```text
-fix: stabilize course preview player
-feat: add health and readiness endpoints
-chore: add docker setup
-docs: add deployment runbook
+```bash
+docker ps
 ```
 
-## Current Status
+Verify health and readiness:
 
-The application currently runs locally with Node.js and Supabase PostgreSQL. The main product flow is stable enough to continue improving production readiness.
-
-The next development focus is:
-
-```text
-1. Fallback image and video handling
-2. Basic error handling
-3. Health and readiness endpoints
-4. Smoke testing
-5. Docker and cloud deployment
+```bash
+curl -i http://localhost:3000/healthz
+curl -i http://localhost:3000/readyz
 ```
 
-## Limitations
+## Project Purpose
 
-Current limitations:
+This project demonstrates practical readiness for DevOps Intern or Backend Intern roles.
 
-- Some uploaded assets are still stored locally
-- Supabase Storage cleanup is not fully completed yet
-- Docker setup is not added yet
-- AWS EC2 deployment is not added yet
-- CI/CD is not added yet
-- Monitoring is limited to planned health and readiness checks
-- The project is still evolving from an academic application into a DevOps case study
+Main learning outcomes:
 
-## Future Improvements
-
-Planned improvements:
-
-- Move course images, avatars, and lecture videos to Supabase Storage
-- Add fallback placeholders for missing images
-- Add better invalid video handling
-- Add centralized Express error middleware
-- Add Dockerfile and Docker Compose
-- Deploy to AWS EC2
-- Configure Nginx reverse proxy
-- Add GitHub Actions CI/CD
-- Add deployment smoke tests
-- Add architecture diagrams
-- Add production troubleshooting runbook
-
-## Author
-
-Maintained by Huynh Gia Han.
-
-This repository is part of my personal learning and portfolio development for DevOps Intern and Backend Intern roles. My focus is on improving a Node.js application toward production readiness through application stabilization, environment-based configuration, Docker, cloud deployment, CI/CD, health checks, smoke testing, and deployment documentation.
-
-GitHub: https://github.com/han-labs
-Linkedin: https://www.linkedin.com/in/huynh-gia-han
+* application containerization
+* Linux server operation
+* AWS EC2 deployment
+* Nginx reverse proxy configuration
+* secure environment variable management
+* PostgreSQL session storage
+* health and readiness checks
+* smoke testing
+* GitHub Actions CI/CD
+* deployment documentation and runbook writing
+* cost-aware cloud usage
