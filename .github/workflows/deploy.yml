@@ -22,16 +22,59 @@ jobs:
         run: |
           set -e
 
-          cd /home/ubuntu/online-academy-devops-case-study
+          APP_DIR="/home/ubuntu/online-academy-devops-case-study"
 
+          cd "$APP_DIR"
+
+          echo "Fetching latest source code..."
           git fetch origin main
           git reset --hard origin/main
 
+          echo "Rebuilding and restarting Docker Compose service..."
           docker compose up -d --build
 
+          echo "Current containers:"
           docker ps
 
-          curl -f http://localhost/healthz
-          curl -f http://localhost/readyz
+          echo "Waiting for application health check on port 3000..."
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/healthz; then
+              echo "Application health check passed."
+              break
+            fi
 
+            echo "Application is not ready yet. Retry $i/30..."
+            sleep 2
+
+            if [ "$i" -eq 30 ]; then
+              echo "Application health check failed after retries."
+              docker compose logs --tail=100
+              exit 1
+            fi
+          done
+
+          echo "Waiting for application readiness check on port 3000..."
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/readyz; then
+              echo "Application readiness check passed."
+              break
+            fi
+
+            echo "Application is not ready yet. Retry $i/30..."
+            sleep 2
+
+            if [ "$i" -eq 30 ]; then
+              echo "Application readiness check failed after retries."
+              docker compose logs --tail=100
+              exit 1
+            fi
+          done
+
+          echo "Verifying Nginx reverse proxy..."
+          curl -fsS http://localhost/healthz
+          curl -fsS http://localhost/readyz
+
+          echo "Cleaning unused Docker images..."
           docker image prune -f
+
+          echo "Deployment completed successfully."
