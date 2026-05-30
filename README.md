@@ -31,6 +31,7 @@ The AWS EC2 deployment is used as a documented DevOps case study. The EC2 instan
 * Implemented GitHub Actions manual CD using a self-hosted runner on EC2
 * Hosted the public demo on Render with HTTPS and Google OAuth
 * Prepared deployment guide, runbook, architecture notes, and deployment screenshots
+* Documented lightweight observability using health/readiness checks, smoke tests, Docker logs, Nginx logs, AWS Budget Alert, and CloudWatch basic metrics
 
 ## Tech Stack
 
@@ -169,6 +170,7 @@ The smoke test verifies:
 | [RUNBOOK.md](RUNBOOK.md)             | Operations commands, troubleshooting steps, and monitoring checklist          |
 | [ARCHITECTURE.md](ARCHITECTURE.md)   | System architecture, request flow, database overview, and deployment topology |
 | [docs/screenshots](docs/screenshots) | Deployment evidence screenshots                                               |
+| [OBSERVABILITY.md](OBSERVABILITY.md) | Lightweight observability notes, monitoring checklist, logs, metrics, and future improvements |
 
 ## Environment Configuration
 
