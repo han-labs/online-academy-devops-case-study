@@ -1,0 +1,37 @@
+name: Manual EC2 Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ec2-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy on EC2
+    runs-on:
+      - self-hosted
+      - online-academy-ec2
+
+    steps:
+      - name: Deploy latest main branch
+        run: |
+          set -e
+
+          cd /home/ubuntu/online-academy-devops-case-study
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          docker compose up -d --build
+
+          docker ps
+
+          curl -f http://localhost/healthz
+          curl -f http://localhost/readyz
+
+          docker image prune -f
